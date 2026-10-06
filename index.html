@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ក្តារខៀនរូបិយវត្ថុខ្មែរ - Khmer Money Whiteboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: 'Kantumruy Pro', system-ui, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #ffffff;
+    }
+
+    /* ================= ផ្ទាំងចំហៀងខាងឆ្វេង (Sidebar) ================= */
+    #sidebar {
+      width: 285px;
+      background: #3b6ea5;
+      display: flex;
+      flex-direction: column;
+      border-right: 2px solid #234c75;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+      z-index: 40;
+      transition: margin-left 0.25s ease, background-color 0.2s ease;
+    }
+
+    #sidebar.hidden {
+      margin-left: -285px;
+    }
+
+    #sidebar.drag-over-delete {
+      background-color: #ef4444 !important;
+      outline: 3px dashed #ffffff;
+      outline-offset: -6px;
+    }
+
+    .sidebar-header {
+      background: #202b38;
+      color: #ffffff;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #161e27;
+      padding: 0 12px 0 16px;
+    }
+
+    .tiles-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .collapse-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .collapse-btn:hover {
+      background: #334155;
+      color: #38bdf8;
+    }
+
+    .money-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .money-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .money-list::-webkit-scrollbar-track {
+      background: #2c527d;
+    }
+    .money-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    /* ================= រចនាប័ទ្មក្រដាសប្រាក់ ================= */
+    .banknote {
+      width: 100%;
+      height: 112px;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+      border: 2px solid rgba(255,255,255,0.7);
+      flex-shrink: 0;
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .banknote:active {
+      cursor: grabbing;
+    }
+
+    .upload-btn-overlay {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      border-radius: 4px;
+      font-size: 11px;
+      padding: 2px 6px;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .upload-btn-overlay:hover {
+      background: #0284c7;
+      color: #ffffff;
+    }
+
+    .custom-img-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      display: none;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .note-inner-border {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      border: 1.5px dashed rgba(255,255,255,0.65);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .note-security-strip {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 62px;
+      width: 10px;
+      background: rgba(255, 255, 255, 0.22);
+      border-left: 1px dotted rgba(255,215,0,0.85);
+      border-right: 1px dotted rgba(255,215,0,0.85);
+      pointer-events: none;
+    }
+
+    .note-watermark {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255,255,255,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.45);
+      font-size: 26px;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    .note-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .note-issuer {
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.45);
+    }
+
+    .note-serial {
+      font-size: 9px;
+      font-family: monospace;
+      color: #ffffff;
+      background: rgba(0,0,0,0.35);
+      padding: 1px 5px;
+      border-radius: 2px;
+      margin-right: 58px;
+    }
+
+    .note-center {
+      text-align: center;
+      z-index: 2;
+      margin-top: -2px;
+      pointer-events: none;
+    }
+
+    .note-khmer-val {
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1.1;
+      text-shadow: 1px 2px 3px rgba(0,0,0,0.45);
+    }
+
+    .note-khmer-words {
+      font-size: 11.5px;
+      font-weight: 600;
+      opacity: 0.95;
+    }
+
+    .note-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .corner-badge {
+      background: rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+      padding: 1px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      font-family: sans-serif;
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+
+    /* ពណ៌ក្រដាសប្រាក់ */
+    .note-50     { background: linear-gradient(135deg, #52525b, #71717a, #3f3f46); color: #fff; }
+    .note-100    { background: linear-gradient(135deg, #c2593f, #e07a5f, #8c321d); color: #fff; }
+    .note-200    { background: linear-gradient(135deg, #3d7a5a, #57a777, #25523b); color: #fff; }
+    .note-500    { background: linear-gradient(135deg, #873e5c, #b05c7e, #592038); color: #fff; }
+    .note-1000   { background: linear-gradient(135deg, #2b6282, #4182a4, #184158); color: #fff; }
+    .note-2000   { background: linear-gradient(135deg, #a47833, #cfa04c, #6e4e1a); color: #fff; }
+    .note-5000   { background: linear-gradient(135deg, #6e4a3b, #966b59, #472b20); color: #fff; }
+    .note-10000  { background: linear-gradient(135deg, #2c4a6f, #456c9b, #192d47); color: #fff; }
+    .note-15000  { background: linear-gradient(135deg, #5b3a6d, #7c4d93, #432553); color: #fff; }
+    .note-30000  { background: linear-gradient(135deg, #25596b, #3b7d94, #173d4b); color: #fff; }
+    .note-50000  { background: linear-gradient(135deg, #78350f, #a16207, #451a03); color: #fff; }
+    .note-100000 { background: linear-gradient(135deg, #1e3a5f, #2563eb, #0f172a); color: #fff; }
+
+    /* ================= ផ្ទាំងពណ៌ស (Board Container) ================= */
+    #board-container {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #board-container.show-grid {
+      background-image: 
+        linear-gradient(to right, #e2e8f0 1.2px, transparent 1.2px),
+        linear-gradient(to bottom, #e2e8f0 1.2px, transparent 1.2px);
+      background-size: 32px 32px;
+    }
+
+    #drawingCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 25;
+      touch-action: none;
+      pointer-events: none;
+    }
+
+    #drawingCanvas.active-pen {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    #drawingCanvas.active-eraser {
+      pointer-events: auto;
+      cursor: cell;
+    }
+
+    .placed-item {
+      position: absolute;
+      width: 240px;
+      height: 112px;
+      cursor: grab;
+      touch-action: none;
+      z-index: 10;
+      transform-origin: 0 0;
+    }
+
+    .placed-item:active {
+      cursor: grabbing;
+    }
+
+    .placed-item .upload-btn-overlay {
+      display: none;
+    }
+
+    .placed-item .note-serial {
+      margin-right: 0;
+    }
+
+    .placed-item.selected {
+      outline: 3.5px solid #0284c7 !important;
+      box-shadow: 0 0 18px rgba(2, 132, 199, 0.8) !important;
+      z-index: 15;
+    }
+
+    #selectionBox {
+      position: absolute;
+      border: 1.5px dashed #0284c7;
+      background: rgba(2, 132, 199, 0.15);
+      pointer-events: none;
+      display: none;
+      z-index: 35;
+    }
+
+    /* ផ្ទាំងបង្ហាញទឹកប្រាក់សរុប */
+    #floatingTotalBox {
+      position: absolute;
+      top: 20px;
+      left: 30px;
+      background: #141e2c;
+      color: #38bdf8;
+      border: 3.5px solid #0284c7;
+      border-radius: 24px;
+      padding: 12px 30px;
+      font-size: 38px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      cursor: move;
+      touch-action: none;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      line-height: 1.2;
+    }
+
+    #floatingTotalBox.hidden {
+      display: none !important;
+    }
+
+    #floatingTotalBox .drag-icon {
+      font-size: 24px;
+      color: #94a3b8;
+    }
+
+    /* របារឧបករណ៍ខាងលើ */
+    .top-horizontal-bar {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      z-index: 50;
+    }
+
+    .top-bar-btn {
+      height: 44px;
+      padding: 0 12px;
+      background: transparent;
+      border: none;
+      border-right: 1px solid #334155;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .top-bar-btn.icon-only {
+      width: 44px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .top-bar-btn:last-child {
+      border-right: none;
+    }
+
+    .top-bar-btn:hover {
+      background: #334155;
+      color: #38bdf8;
+    }
+
+    .top-bar-btn.active {
+      color: #38bdf8;
+      background: rgba(2, 132, 199, 0.25);
+    }
+
+    .top-bar-btn.muted {
+      color: #ef4444;
+    }
+
+    .top-bar-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* ផ្ទាំង POPUP ប៊ិក */
+    #penToolkitModal {
+      position: absolute;
+      bottom: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #242938;
+      border: 1.5px solid #3b4252;
+      border-radius: 20px;
+      padding: 16px 20px 14px 20px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 390px;
+    }
+
+    #penToolkitModal.hidden {
+      display: none !important;
+    }
+
+    .toolkit-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tools-list {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+    }
+
+    .pen-tool-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .pen-tool-box {
+      width: 52px;
+      height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      border-radius: 12px;
+      padding-bottom: 6px;
+      border: 2px solid transparent;
+    }
+
+    .pen-tool-item.active .pen-tool-box {
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .pen-tool-name {
+      font-size: 12px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .graphic-pencil {
+      width: 22px;
+      height: 54px;
+      background: #1e293b;
+      position: relative;
+    }
+    .graphic-pencil::before {
+      content: '';
+      position: absolute;
+      top: -14px;
+      left: 0;
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-bottom: 14px solid var(--tool-color, #a855f7);
+    }
+
+    .graphic-pen {
+      width: 24px;
+      height: 48px;
+      background: #334155;
+      border-radius: 6px 6px 2px 2px;
+      position: relative;
+    }
+    .graphic-pen::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: 2px;
+      width: 20px;
+      height: 12px;
+      background: var(--tool-color, #a855f7);
+      border-radius: 10px 10px 2px 2px;
+    }
+
+    .graphic-highlighter {
+      width: 20px;
+      height: 44px;
+      background: #475569;
+      position: relative;
+    }
+    .graphic-highlighter::before {
+      content: '';
+      position: absolute;
+      top: -14px;
+      left: 1px;
+      width: 18px;
+      height: 14px;
+      background: var(--tool-color, #a855f7);
+      clip-path: polygon(0% 100%, 100% 100%, 100% 0%, 0% 40%);
+    }
+
+    .graphic-eraser {
+      width: 26px;
+      height: 52px;
+      background: #94a3b8;
+      border-radius: 10px 10px 3px 3px;
+      position: relative;
+    }
+    .graphic-eraser::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: #cbd5e1;
+      border-radius: 0 0 3px 3px;
+    }
+
+    .divider-v {
+      width: 1px;
+      height: 60px;
+      background: #3b4252;
+    }
+
+    .color-grid-2x3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .c-bubble {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .c-bubble.active {
+      border-color: #ffffff;
+      transform: scale(1.2);
+    }
+
+    .toolkit-bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .size-label {
+      font-size: 14px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .size-slider-input {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #3b4252;
+      outline: none;
+    }
+
+    .size-preview-box {
+      width: 32px;
+      height: 32px;
+      background: #181d28;
+      border: 1px solid #3b4252;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-dot {
+      background: var(--tool-color, #a855f7);
+      border-radius: 50%;
+    }
+
+    /* របារបញ្ជាខាងក្រោម */
+    .bottom-palette {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 35px;
+      display: flex;
+      align-items: center;
+      padding: 6px 14px;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      z-index: 50;
+    }
+
+    .bottom-btn {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 20px;
+      border: none;
+      background: #334155;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bottom-btn:hover { background: #475569; }
+    .bottom-btn.active { background: #0284c7; }
+    .bottom-btn.danger:hover { background: #dc2626; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="tiles-tab">
+        <span>▲</span>
+        <span>ប្រាក់រៀលខ្មែរ</span>
+      </div>
+      <button class="collapse-btn" title="លាក់បញ្ជីប្រាក់រៀល" onclick="toggleSidebar()">✕</button>
+    </div>
+
+    <!-- បញ្ជីសន្លឹកប្រាក់ទាំង ១២ ប្រភេទ -->
+    <div class="money-list" id="moneyList">
+      <div class="banknote note-50" draggable="true" data-val="50">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="50">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ក១ 1029384</span></div>
+        <div class="note-center"><div class="note-khmer-val">៥០</div><div class="note-khmer-words">ហាសិបរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">50</span><span class="corner-badge">50</span></div>
+      </div>
+
+      <div class="banknote note-100" draggable="true" data-val="100">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="100">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ក៥ 8920147</span></div>
+        <div class="note-center"><div class="note-khmer-val">១០០</div><div class="note-khmer-words">មួយរយរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">100</span><span class="corner-badge">100</span></div>
+      </div>
+
+      <div class="banknote note-200" draggable="true" data-val="200">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="200">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ខ២ 4178920</span></div>
+        <div class="note-center"><div class="note-khmer-val">២០០</div><div class="note-khmer-words">ពីររយរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">200</span><span class="corner-badge">200</span></div>
+      </div>
+
+      <div class="banknote note-500" draggable="true" data-val="500">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="500">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">គ៩ 5555503</span></div>
+        <div class="note-center"><div class="note-khmer-val">៥០០</div><div class="note-khmer-words">ប្រាំរយរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">500</span><span class="corner-badge">500</span></div>
+      </div>
+
+      <div class="banknote note-1000" draggable="true" data-val="1000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="1000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ឃ១ 3098124</span></div>
+        <div class="note-center"><div class="note-khmer-val">១ ០០០</div><div class="note-khmer-words">មួយពាន់រៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">1000</span><span class="corner-badge">1000</span></div>
+      </div>
+
+      <div class="banknote note-2000" draggable="true" data-val="2000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="2000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ង៨ 7843210</span></div>
+        <div class="note-center"><div class="note-khmer-val">២ ០០០</div><div class="note-khmer-words">ពីរពាន់រៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">2000</span><span class="corner-badge">2000</span></div>
+      </div>
+
+      <div class="banknote note-5000" draggable="true" data-val="5000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="5000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ច៤ 6210984</span></div>
+        <div class="note-center"><div class="note-khmer-val">៥ ០០០</div><div class="note-khmer-words">ប្រាំពាន់រៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">5000</span><span class="corner-badge">5000</span></div>
+      </div>
+
+      <div class="banknote note-10000" draggable="true" data-val="10000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="10000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ឆ៣ 9012456</span></div>
+        <div class="note-center"><div class="note-khmer-val">១០ ០០០</div><div class="note-khmer-words">មួយម៉ឺនរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">10000</span><span class="corner-badge">10000</span></div>
+      </div>
+
+      <div class="banknote note-15000" draggable="true" data-val="15000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="15000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ជ៧ 1500984</span></div>
+        <div class="note-center"><div class="note-khmer-val">១៥ ០០០</div><div class="note-khmer-words">មួយម៉ឺនប្រាំពាន់រៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">15000</span><span class="corner-badge">15000</span></div>
+      </div>
+
+      <div class="banknote note-30000" draggable="true" data-val="30000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="30000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ឈ៥ 3098712</span></div>
+        <div class="note-center"><div class="note-khmer-val">៣០ ០០០</div><div class="note-khmer-words">បីម៉ឺនរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">30000</span><span class="corner-badge">30000</span></div>
+      </div>
+
+      <div class="banknote note-50000" draggable="true" data-val="50000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="50000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ញ៩ 5012384</span></div>
+        <div class="note-center"><div class="note-khmer-val">៥០ ០០០</div><div class="note-khmer-words">ប្រាំម៉ឺនរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">50000</span><span class="corner-badge">50000</span></div>
+      </div>
+
+      <div class="banknote note-100000" draggable="true" data-val="100000">
+        <label class="upload-btn-overlay">📷 ដាក់រូប<input type="file" accept="image/*" style="display:none;" onchange="loadCustomImage(this)"></label>
+        <img class="custom-img-layer" alt="100000">
+        <div class="note-inner-border"></div>
+        <div class="note-security-strip"></div>
+        <div class="note-watermark">៛</div>
+        <div class="note-top"><span class="note-issuer">ធនាគារជាតិនៃកម្ពុជា</span><span class="note-serial">ដ២ 9988776</span></div>
+        <div class="note-center"><div class="note-khmer-val">១០០ ០០០</div><div class="note-khmer-words">ដប់ម៉ឺនរៀល</div></div>
+        <div class="note-bottom"><span class="corner-badge">100000</span><span class="corner-badge">100000</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ផ្ទាំងពណ៌ស (Board) -->
+  <div id="board-container">
+    <canvas id="drawingCanvas"></canvas>
+    <div id="selectionBox"></div>
+    
+    <!-- ផ្ទាំងបង្ហាញទឹកប្រាក់សរុប -->
+    <div id="floatingTotalBox" title="ចុចអូសរំកិលទីតាំងបាន">
+      <span class="drag-icon">✥</span>
+      <span id="totalDisplay">ទឹកប្រាក់សរុប៖ 0 ៛</span>
+    </div>
+
+    <!-- របារជួរដេកតូចខាងលើ -->
+    <div class="top-horizontal-bar">
+      <!-- ប៊ូតុង បិទ/បើក សំឡេង -->
+      <button class="top-bar-btn icon-only" id="btnToggleSound" title="បិទ ឬ បើកសំឡេងបែបផែន" onclick="toggleSound()">
+        <svg id="soundIconOn" viewBox="0 0 24 24">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        <svg id="soundIconOff" viewBox="0 0 24 24" style="display:none;">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+
+      <!-- ប៊ូតុង Zoom In / Zoom Out -->
+      <button class="top-bar-btn icon-only" title="ពង្រីក (Zoom In)" onclick="zoomIn()">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="11" y1="8" x2="11" y2="14"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </button>
+
+      <button class="top-bar-btn icon-only" title="បង្រួម (Zoom Out)" onclick="zoomOut()">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </button>
+
+      <button class="top-bar-btn" id="btnToggleSidebar" title="លាក់ ឬបង្ហាញផ្ទាំងបញ្ជីប្រាក់រៀល" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <span id="sidebarBtnText">លាក់ប្រាក់រៀល</span>
+      </button>
+
+      <button class="top-bar-btn" id="btnToggleTotal" title="លាក់ ឬបង្ហាញប្រអប់ទឹកប្រាក់សរុប" onclick="toggleTotalBox()">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span id="totalBtnText">លាក់ប្រាក់សរុប</span>
+      </button>
+
+      <button class="top-bar-btn icon-only" id="gridToolBtn" title="បើក/បិទ ក្រឡាចត្រង្គ" onclick="toggleGrid()">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+          <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+        </svg>
+      </button>
+
+      <button class="top-bar-btn icon-only" title="ត្រឡប់ក្រោយ (Undo)" onclick="undoLast()">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+
+      <button class="top-bar-btn icon-only" title="ទៅមុខវិញ (Redo)" onclick="redoLast()">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      </button>
+
+      <button class="top-bar-btn icon-only" title="ពង្រីកពេញអេក្រង់" onclick="toggleFullScreen()">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+
+      <button class="top-bar-btn icon-only" title="សម្អាតក្តារ (Clear All)" onclick="clearAll()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+
+    <!-- ផ្ទាំង POPUP ប៊ិក -->
+    <div id="penToolkitModal" class="hidden">
+      <div class="toolkit-top-row">
+        <div class="tools-list">
+          <div class="pen-tool-item" id="toolPencil" onclick="selectPenType('pencil')">
+            <div class="pen-tool-box"><div class="graphic-pencil"></div></div>
+            <span class="pen-tool-name">ខ្មៅដៃ</span>
+          </div>
+
+          <div class="pen-tool-item active" id="toolInk" onclick="selectPenType('ink')">
+            <div class="pen-tool-box"><div class="graphic-pen"></div></div>
+            <span class="pen-tool-name">ប៊ិកទឹក</span>
+          </div>
+
+          <div class="pen-tool-item" id="toolHighlighter" onclick="selectPenType('highlighter')">
+            <div class="pen-tool-box"><div class="graphic-highlighter"></div></div>
+            <span class="pen-tool-name">ហាយឡាយ</span>
+          </div>
+
+          <div class="pen-tool-item" id="toolEraser" onclick="selectPenType('eraser')">
+            <div class="pen-tool-box"><div class="graphic-eraser"></div></div>
+            <span class="pen-tool-name">ជ័រលុប</span>
+          </div>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <div class="color-grid-2x3">
+          <div class="c-bubble" style="background:#1e293b;" onclick="chooseColor('#1e293b', this)"></div>
+          <div class="c-bubble" style="background:#ef4444;" onclick="chooseColor('#ef4444', this)"></div>
+          <div class="c-bubble" style="background:#3b82f6;" onclick="chooseColor('#3b82f6', this)"></div>
+          <div class="c-bubble" style="background:#10b981;" onclick="chooseColor('#10b981', this)"></div>
+          <div class="c-bubble" style="background:#f59e0b;" onclick="chooseColor('#f59e0b', this)"></div>
+          <div class="c-bubble active" style="background:#a855f7;" onclick="chooseColor('#a855f7', this)"></div>
+        </div>
+      </div>
+
+      <div class="toolkit-bottom-row">
+        <span class="size-label">ទំហំ៖</span>
+        <input type="range" min="2" max="30" value="6" class="size-slider-input" id="brushSizeSlider" oninput="changeBrushSize(this.value)">
+        <div class="size-preview-box">
+          <div class="preview-dot" id="previewDot" style="width:6px; height:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- របារបញ្ជាខាងក្រោម -->
+    <div class="bottom-palette">
+      <button class="bottom-btn active" id="btnPointerMode" onclick="setSelectMode()">
+        <span>↖</span> ជ្រើសរើស (Select)
+      </button>
+
+      <button class="bottom-btn" id="btnTogglePenModal" onclick="togglePenModal()">
+        <span>🖊</span> ឧបករណ៍ប៊ិក (Pen Tools)
+      </button>
+
+      <button class="bottom-btn danger" onclick="deleteSelected()">
+        លុបដែលបានជ្រើសរើស (Delete)
+      </button>
+
+      <button class="bottom-btn" onclick="clearDrawings()">
+        លុបតែស្នាមប៊ិកទាំងអស់
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ================= ប្រព័ន្ធសំឡេងដើមទាំងស្រុង (Original Web Audio API Synthesis) =================
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let isSoundEnabled = localStorage.getItem('khmer_money_sound') !== 'false';
+
+    function initAudio() {
+      if (!isSoundEnabled) return false;
+      if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return true;
+    }
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      localStorage.setItem('khmer_money_sound', isSoundEnabled);
+      updateSoundButtonUI();
+      if (isSoundEnabled) playPopSound();
+    }
+
+    function updateSoundButtonUI() {
+      const iconOn = document.getElementById('soundIconOn');
+      const iconOff = document.getElementById('soundIconOff');
+      const btn = document.getElementById('btnToggleSound');
+      if (isSoundEnabled) {
+        iconOn.style.display = 'block';
+        iconOff.style.display = 'none';
+        btn.classList.remove('muted');
+        btn.title = 'សំឡេងកំពុងបើក (ចុចដើម្បីបិទ)';
+      } else {
+        iconOn.style.display = 'none';
+        iconOff.style.display = 'block';
+        btn.classList.add('muted');
+        btn.title = 'សំឡេងត្រូវបានបិទ (ចុចដើម្បីបើក)';
+      }
+    }
+
+    // ១. សំឡេងក្រដាសប្រាក់ដើម (Cash Rustle + Bell Ping Sound)
+    function playCashSound() {
+      if (!isSoundEnabled) return;
+      try {
+        if (!initAudio()) return;
+        const now = audioCtx.currentTime;
+        
+        // សំឡេងសង្កៀតក្រដាសប្រាក់ (White Noise bandpass)
+        const bufferSize = audioCtx.sampleRate * 0.12;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1400, now);
+        filter.Q.setValueAtTime(3.0, now);
+
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.25, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+
+        // សំឡេងកណ្ដឹងប្រាក់លាន់ស្រួយស្រទន់ (Harmonic triangle chime)
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+
+        oscGain.gain.setValueAtTime(0.12, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+
+        noise.start(now);
+        osc.start(now);
+        noise.stop(now + 0.12);
+        osc.stop(now + 0.12);
+      } catch(e) {}
+    }
+
+    // ២. សំឡេងចុចប៊ូតុង / ជ្រើសរើសដើម (Pop Click Sound)
+    function playPopSound() {
+      if (!isSoundEnabled) return;
+      try {
+        if (!initAudio()) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.06);
+      } catch(e) {}
+    }
+
+    // ៣. សំឡេងលុបដើម (Whoosh/Trash Sound)
+    function playDeleteSound() {
+      if (!isSoundEnabled) return;
+      try {
+        if (!initAudio()) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } catch(e) {}
+    }
+
+    // ៤. សំឡេងជ័រលុបដើម (Eraser Scrub Sound)
+    let lastEraserTime = 0;
+    function playEraserSound() {
+      if (!isSoundEnabled) return;
+      const nowMs = Date.now();
+      if (nowMs - lastEraserTime < 110) return;
+      lastEraserTime = nowMs;
+
+      try {
+        if (!initAudio()) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180 + Math.random() * 80, now);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } catch(e) {}
+    }
+
+    // ៥. សំឡេងគូសប៊ិកដើម (Pen Touch Sound)
+    function playPenSound() {
+      if (!isSoundEnabled) return;
+      try {
+        if (!initAudio()) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(380, now + 0.04);
+
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } catch(e) {}
+    }
+
+    // ================= ការគ្រប់គ្រងផ្ទៃក្តារ និងក្រដាសប្រាក់ =================
+    const sidebar = document.getElementById('sidebar');
+    const board = document.getElementById('board-container');
+    const floatingTotalBox = document.getElementById('floatingTotalBox');
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const penModal = document.getElementById('penToolkitModal');
+    const previewDot = document.getElementById('previewDot');
+    const selectionBox = document.getElementById('selectionBox');
+    
+    let selectedElements = new Set();
+    let redoStack = [];
+    let strokes = []; 
+    let currentStroke = null;
+
+    let isDrawingMode = false;
+    let currentPenType = 'ink';
+    let currentColor = '#a855f7';
+    let currentSize = 6;
+    let isDrawing = false;
+
+    let currentZoomScale = 1.0;
+
+    document.documentElement.style.setProperty('--tool-color', currentColor);
+
+    function resizeCanvas() {
+      canvas.width = board.clientWidth;
+      canvas.height = board.clientHeight;
+      redrawAllStrokes();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // មុខងារ Zoom In / Zoom Out
+    function zoomIn() {
+      if (currentZoomScale < 1.7) {
+        currentZoomScale = Math.round((currentZoomScale + 0.15) * 100) / 100;
+        applyZoom();
+      }
+    }
+
+    function zoomOut() {
+      if (currentZoomScale > 0.5) {
+        currentZoomScale = Math.round((currentZoomScale - 0.15) * 100) / 100;
+        applyZoom();
+      }
+    }
+
+    function applyZoom() {
+      playPopSound();
+      document.querySelectorAll('.placed-item').forEach(item => {
+        item.style.transform = `scale(${currentZoomScale})`;
+      });
+    }
+
+    function redrawAllStrokes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      strokes.forEach(s => {
+        if (!s.points || s.points.length < 2) return;
+        ctx.beginPath();
+        ctx.moveTo(s.points[0].x, s.points[0].y);
+        for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i].x, s.points[i].y);
+
+        ctx.lineCap = (s.type === 'highlighter') ? 'square' : 'round';
+        ctx.lineJoin = (s.type === 'highlighter') ? 'bevel' : 'round';
+
+        if (s.type === 'highlighter') {
+          ctx.strokeStyle = s.color + '55';
+          ctx.lineWidth = s.size * 2.8;
+        } else if (s.type === 'pencil') {
+          ctx.strokeStyle = s.color + 'cc';
+          ctx.lineWidth = Math.max(1.5, s.size * 0.7);
+        } else {
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = s.size;
+        }
+        ctx.stroke();
+
+        if (s.selected) {
+          ctx.save();
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = Math.max(s.lineWidth || s.size, 4) + 6;
+          ctx.setLineDash([6, 6]);
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+    }
+
+    function setSelectMode() {
+      isDrawingMode = false;
+      playPopSound();
+      document.getElementById('btnPointerMode').classList.add('active');
+      document.getElementById('btnTogglePenModal').classList.remove('active');
+      penModal.classList.add('hidden');
+      canvas.className = '';
+    }
+
+    function togglePenModal() {
+      playPopSound();
+      if (penModal.classList.contains('hidden')) {
+        penModal.classList.remove('hidden');
+        activateDrawingMode();
+      } else {
+        penModal.classList.add('hidden');
+      }
+    }
+
+    function activateDrawingMode() {
+      isDrawingMode = true;
+      clearNoteSelection();
+      clearAllStrokeSelection();
+      document.getElementById('btnPointerMode').classList.remove('active');
+      document.getElementById('btnTogglePenModal').classList.add('active');
+      canvas.className = (currentPenType === 'eraser') ? 'active-eraser' : 'active-pen';
+    }
+
+    function selectPenType(type) {
+      playPopSound();
+      currentPenType = type;
+      document.querySelectorAll('.pen-tool-item').forEach(el => el.classList.remove('active'));
+      if (type === 'pencil') document.getElementById('toolPencil').classList.add('active');
+      if (type === 'ink') document.getElementById('toolInk').classList.add('active');
+      if (type === 'highlighter') document.getElementById('toolHighlighter').classList.add('active');
+      if (type === 'eraser') document.getElementById('toolEraser').classList.add('active');
+      activateDrawingMode();
+    }
+
+    function chooseColor(color, el) {
+      playPopSound();
+      currentColor = color;
+      document.documentElement.style.setProperty('--tool-color', color);
+      document.querySelectorAll('.c-bubble').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      if (currentPenType === 'eraser') selectPenType('ink');
+      else activateDrawingMode();
+    }
+
+    function changeBrushSize(val) {
+      currentSize = parseInt(val);
+      previewDot.style.width = Math.min(24, Math.max(4, currentSize)) + 'px';
+      previewDot.style.height = Math.min(24, Math.max(4, currentSize)) + 'px';
+    }
+
+    function clearAllStrokeSelection() {
+      strokes.forEach(s => s.selected = false);
+      redrawAllStrokes();
+    }
+
+    function clearNoteSelection() {
+      selectedElements.forEach(el => el.classList.remove('selected'));
+      selectedElements.clear();
+    }
+
+    // Canvas Drawing Handlers
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!isDrawingMode) return;
+      isDrawing = true;
+      if (currentPenType === 'eraser') {
+        playEraserSound();
+        eraseStrokesAt(e.offsetX, e.offsetY, currentSize * 4);
+      } else {
+        playPenSound();
+        currentStroke = {
+          type: currentPenType,
+          color: currentColor,
+          size: currentSize,
+          points: [{ x: e.offsetX, y: e.offsetY }],
+          selected: false
+        };
+        strokes.push(currentStroke);
+      }
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing || !isDrawingMode) return;
+      if (currentPenType === 'eraser') {
+        playEraserSound();
+        eraseStrokesAt(e.offsetX, e.offsetY, currentSize * 4);
+      } else if (currentStroke) {
+        currentStroke.points.push({ x: e.offsetX, y: e.offsetY });
+        redrawAllStrokes();
+      }
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (isDrawingMode) {
+        isDrawing = false;
+        currentStroke = null;
+        try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+      }
+    });
+
+    function distanceToSegment(p, a, b) {
+      const l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+      if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+      let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+    }
+
+    function hitTestStroke(stroke, x, y, threshold) {
+      const pts = stroke.points;
+      for (let i = 0; i < pts.length - 1; i++) {
+        if (distanceToSegment({x, y}, pts[i], pts[i+1]) < threshold) return true;
+      }
+      return false;
+    }
+
+    function eraseStrokesAt(x, y, radius) {
+      const beforeCount = strokes.length;
+      strokes = strokes.filter(s => !hitTestStroke(s, x, y, radius));
+      if (strokes.length !== beforeCount) redrawAllStrokes();
+    }
+
+    // ================= គូសប្រអប់ជ្រើសរើស (Multi-select Box) =================
+    let isBoxSelecting = false;
+    let bStartX = 0, bStartY = 0;
+
+    board.addEventListener('pointerdown', (e) => {
+      if (isDrawingMode) return;
+      if (e.target.closest('.placed-item') || e.target.closest('#floatingTotalBox') || e.target.closest('.top-horizontal-bar') || e.target.closest('.bottom-palette')) {
+        return;
+      }
+
+      isBoxSelecting = true;
+      const bRect = board.getBoundingClientRect();
+      bStartX = e.clientX - bRect.left;
+      bStartY = e.clientY - bRect.top;
+
+      if (!e.shiftKey) {
+        clearNoteSelection();
+        clearAllStrokeSelection();
+      }
+
+      selectionBox.style.left = `${bStartX}px`;
+      selectionBox.style.top = `${bStartY}px`;
+      selectionBox.style.width = '0px';
+      selectionBox.style.height = '0px';
+      selectionBox.style.display = 'block';
+      board.setPointerCapture(e.pointerId);
+    });
+
+    board.addEventListener('pointermove', (e) => {
+      if (!isBoxSelecting) return;
+      const bRect = board.getBoundingClientRect();
+      const currentX = e.clientX - bRect.left;
+      const currentY = e.clientY - bRect.top;
+
+      const left = Math.min(bStartX, currentX);
+      const top = Math.min(bStartY, currentY);
+      const width = Math.abs(currentX - bStartX);
+      const height = Math.abs(currentY - bStartY);
+
+      selectionBox.style.left = `${left}px`;
+      selectionBox.style.top = `${top}px`;
+      selectionBox.style.width = `${width}px`;
+      selectionBox.style.height = `${height}px`;
+
+      // ជ្រើសរើសក្រដាសប្រាក់ទាំងអស់ដែលស្ថិតក្នុងប្រអប់
+      document.querySelectorAll('.placed-item').forEach(item => {
+        const iLeft = item.offsetLeft;
+        const iTop = item.offsetTop;
+        const iWidth = 240 * currentZoomScale;
+        const iHeight = 112 * currentZoomScale;
+
+        const isInside = !(left > iLeft + iWidth || left + width < iLeft || top > iTop + iHeight || top + height < iTop);
+
+        if (isInside) {
+          selectedElements.add(item);
+          item.classList.add('selected');
+        } else if (!e.shiftKey) {
+          selectedElements.delete(item);
+          item.classList.remove('selected');
+        }
+      });
+    });
+
+    board.addEventListener('pointerup', (e) => {
+      if (isBoxSelecting) {
+        isBoxSelecting = false;
+        selectionBox.style.display = 'none';
+        try { board.releasePointerCapture(e.pointerId); } catch(err){}
+        if (selectedElements.size > 0) playPopSound();
+      }
+    });
+
+    // ================= បង្កើត និងអូសក្រដាសប្រាក់ (Multi-drag & Drag to Delete) =================
+    document.querySelectorAll('#sidebar .banknote').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.upload-btn-overlay')) return;
+        spawnBanknote(card, 80 + Math.random() * 80, 100 + Math.random() * 80);
+      });
+    });
+
+    function spawnBanknote(templateNode, x, y) {
+      playCashSound();
+      const clone = templateNode.cloneNode(true);
+      clone.classList.add('placed-item');
+      clone.removeAttribute('draggable');
+      clone.style.left = `${x}px`;
+      clone.style.top = `${y}px`;
+      clone.style.transform = `scale(${currentZoomScale})`;
+
+      bindItemDrag(clone);
+      board.appendChild(clone);
+
+      clearNoteSelection();
+      selectedElements.add(clone);
+      clone.classList.add('selected');
+
+      updateTotal();
+      redoStack = [];
+    }
+
+    function bindItemDrag(el) {
+      let isDragging = false;
+      let startClientX = 0, startClientY = 0;
+      let itemOriginalPositions = new Map();
+
+      el.addEventListener('pointerdown', (e) => {
+        if (isDrawingMode) return;
+        isDragging = true;
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+
+        // បើមិនទាន់ select ក្រដាសប្រាក់នេះទេ ត្រូវជ្រើសរើសវា
+        if (!selectedElements.has(el)) {
+          if (!e.shiftKey) clearNoteSelection();
+          selectedElements.add(el);
+          el.classList.add('selected');
+          playPopSound();
+        }
+
+        // កត់ត្រាទីតាំងដើមនៃធាតុដែលបាន select ទាំងអស់ដើម្បីអូសដំណាលគ្នា
+        itemOriginalPositions.clear();
+        selectedElements.forEach(item => {
+          itemOriginalPositions.set(item, { x: item.offsetLeft, y: item.offsetTop });
+        });
+
+        el.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+      });
+
+      el.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startClientX;
+        const dy = e.clientY - startClientY;
+
+        // រំកិលក្រដាសប្រាក់ទាំងអស់
+        selectedElements.forEach(item => {
+          const orig = itemOriginalPositions.get(item);
+          if (orig) {
+            item.style.left = `${orig.x + dx}px`;
+            item.style.top = `${orig.y + dy}px`;
+          }
+        });
+
+        // ពិនិត្យមើលថាតើទាញដល់ Sidebar ដើម្បី Delete ឬទេ
+        if (!sidebar.classList.contains('hidden')) {
+          const sRect = sidebar.getBoundingClientRect();
+          if (e.clientX <= sRect.right && e.clientX >= sRect.left && e.clientY >= sRect.top && e.clientY <= sRect.bottom) {
+            sidebar.classList.add('drag-over-delete');
+          } else {
+            sidebar.classList.remove('drag-over-delete');
+          }
+        }
+      });
+
+      function handleDragEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        try { el.releasePointerCapture(e.pointerId); } catch(err){}
+
+        let isOverSidebar = false;
+        if (!sidebar.classList.contains('hidden')) {
+          const sRect = sidebar.getBoundingClientRect();
+          if (e.clientX <= sRect.right && e.clientX >= sRect.left && e.clientY >= sRect.top && e.clientY <= sRect.bottom) {
+            isOverSidebar = true;
+          }
+          sidebar.classList.remove('drag-over-delete');
+        }
+
+        // លក្ខខណ្ឌ៖ បើទាញទម្លាក់ចូល Sidebar គឺលុបក្រដាសប្រាក់ទាំងនោះចេញភ្លាមៗ
+        if (isOverSidebar) {
+          playDeleteSound();
+          const removedNotes = [];
+          selectedElements.forEach(item => {
+            removedNotes.push(item);
+            item.remove();
+          });
+          redoStack.push({ action: 'deleteMultipleNotes', nodes: removedNotes });
+          selectedElements.clear();
+          updateTotal();
+        }
+      }
+
+      el.addEventListener('pointerup', handleDragEnd);
+      el.addEventListener('pointercancel', handleDragEnd);
+    }
+
+    // អូសប្រអប់ទឹកប្រាក់សរុប (Floating Total Box)
+    (function initFloatingBoxDrag() {
+      let isDragging = false;
+      let sX, sY, origX, origY;
+
+      floatingTotalBox.addEventListener('pointerdown', (e) => {
+        if (isDrawingMode) return;
+        isDragging = true;
+        sX = e.clientX;
+        sY = e.clientY;
+        origX = floatingTotalBox.offsetLeft;
+        origY = floatingTotalBox.offsetTop;
+        floatingTotalBox.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+      });
+
+      floatingTotalBox.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        floatingTotalBox.style.left = `${origX + (e.clientX - sX)}px`;
+        floatingTotalBox.style.top = `${origY + (e.clientY - sY)}px`;
+      });
+
+      floatingTotalBox.addEventListener('pointerup', (e) => {
+        isDragging = false;
+        try { floatingTotalBox.releasePointerCapture(e.pointerId); } catch(err){}
+      });
+      floatingTotalBox.addEventListener('pointercancel', (e) => {
+        isDragging = false;
+        try { floatingTotalBox.releasePointerCapture(e.pointerId); } catch(err){}
+      });
+    })();
+
+    // មុខងារលុបដែលបានជ្រើសរើស (Delete Selected)
+    function deleteSelected() {
+      let deletedSomething = false;
+
+      const selectedStrokes = strokes.filter(s => s.selected);
+      if (selectedStrokes.length > 0) {
+        redoStack.push({ action: 'deleteStrokes', strokes: selectedStrokes });
+        strokes = strokes.filter(s => !s.selected);
+        redrawAllStrokes();
+        deletedSomething = true;
+      }
+
+      if (selectedElements.size > 0) {
+        const removedNotes = Array.from(selectedElements);
+        redoStack.push({ action: 'deleteMultipleNotes', nodes: removedNotes });
+        selectedElements.forEach(item => item.remove());
+        selectedElements.clear();
+        updateTotal();
+        deletedSomething = true;
+      }
+
+      if (deletedSomething) playDeleteSound();
+    }
+
+    function clearDrawings() {
+      playDeleteSound();
+      strokes = [];
+      redrawAllStrokes();
+    }
+
+    function clearAll() {
+      playDeleteSound();
+      const items = Array.from(document.querySelectorAll('.placed-item'));
+      redoStack.push({ action: 'clearAll', nodes: items, strokes: [...strokes] });
+      items.forEach(el => el.remove());
+      clearDrawings();
+      selectedElements.clear();
+      updateTotal();
+    }
+
+    function undoLast() {
+      playPopSound();
+      if (strokes.length > 0) {
+        const lastStroke = strokes.pop();
+        redoStack.push({ action: 'stroke', stroke: lastStroke });
+        redrawAllStrokes();
+        return;
+      }
+      const items = document.querySelectorAll('.placed-item');
+      if (items.length > 0) {
+        const last = items[items.length - 1];
+        redoStack.push({ action: 'note', node: last });
+        selectedElements.delete(last);
+        last.remove();
+        updateTotal();
+      }
+    }
+
+    function redoLast() {
+      playPopSound();
+      if (redoStack.length > 0) {
+        const lastAction = redoStack.pop();
+        if (lastAction.action === 'stroke') {
+          strokes.push(lastAction.stroke);
+          redrawAllStrokes();
+        } else if (lastAction.action === 'note') {
+          board.appendChild(lastAction.node);
+          bindItemDrag(lastAction.node);
+          clearNoteSelection();
+          selectedElements.add(lastAction.node);
+          lastAction.node.classList.add('selected');
+          updateTotal();
+        } else if (lastAction.action === 'deleteMultipleNotes') {
+          clearNoteSelection();
+          lastAction.nodes.forEach(node => {
+            board.appendChild(node);
+            bindItemDrag(node);
+            selectedElements.add(node);
+            node.classList.add('selected');
+          });
+          updateTotal();
+        } else if (lastAction.action === 'deleteStrokes') {
+          strokes.push(...lastAction.strokes);
+          redrawAllStrokes();
+        } else if (lastAction.action === 'clearAll') {
+          clearNoteSelection();
+          lastAction.nodes.forEach(node => {
+            board.appendChild(node);
+            bindItemDrag(node);
+          });
+          strokes = [...lastAction.strokes];
+          redrawAllStrokes();
+          updateTotal();
+        }
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        deleteSelected();
+      }
+    });
+
+    function updateTotal() {
+      let sum = 0;
+      document.querySelectorAll('.placed-item').forEach(el => {
+        sum += parseInt(el.dataset.val || 0);
+      });
+      const formattedNumber = sum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      document.getElementById('totalDisplay').textContent = `ទឹកប្រាក់សរុប៖ ${formattedNumber} ៛`;
+    }
+
+    function toggleGrid() {
+      playPopSound();
+      board.classList.toggle('show-grid');
+      document.getElementById('gridToolBtn').classList.toggle('active');
+    }
+
+    function toggleSidebar() {
+      playPopSound();
+      sidebar.classList.toggle('hidden');
+      const isHidden = sidebar.classList.contains('hidden');
+      document.getElementById('sidebarBtnText').textContent = isHidden ? 'បង្ហាញប្រាក់រៀល' : 'លាក់ប្រាក់រៀល';
+      document.getElementById('btnToggleSidebar').classList.toggle('active', isHidden);
+      setTimeout(resizeCanvas, 300);
+    }
+
+    function toggleTotalBox() {
+      playPopSound();
+      floatingTotalBox.classList.toggle('hidden');
+      const isHidden = floatingTotalBox.classList.contains('hidden');
+      document.getElementById('totalBtnText').textContent = isHidden ? 'បង្ហាញប្រាក់សរុប' : 'លាក់ប្រាក់សរុប';
+      document.getElementById('btnToggleTotal').classList.toggle('active', isHidden);
+    }
+
+    function toggleFullScreen() {
+      playPopSound();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // ដាក់រូបភាពផ្ទាល់ខ្លួនចូលក្រដាសប្រាក់
+    function loadCustomImage(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        const parentCard = input.closest('.banknote');
+        const val = parentCard.dataset.val;
+        const imgLayer = parentCard.querySelector('.custom-img-layer');
+
+        reader.onload = function(e) {
+          const base64Data = e.target.result;
+          imgLayer.src = base64Data;
+          imgLayer.style.display = 'block';
+          try {
+            localStorage.setItem('khmer_note_' + val, base64Data);
+          } catch (err) {}
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateSoundButtonUI();
+      document.querySelectorAll('#sidebar .banknote').forEach(card => {
+        const val = card.dataset.val;
+        const savedImage = localStorage.getItem('khmer_note_' + val);
+        if (savedImage) {
+          const imgLayer = card.querySelector('.custom-img-layer');
+          imgLayer.src = savedImage;
+          imgLayer.style.display = 'block';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
